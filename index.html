@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>롯데시네마 울산성남 - 설문 참여 추첨</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: #F4F2EC;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: #1A1A1A;
+  }
+  .wrap { width: 100%; max-width: 420px; }
+  .brand {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .brand .name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #C8102E;
+    letter-spacing: 0.3px;
+  }
+  .card {
+    background: #FFFFFF;
+    border: 0.5px solid rgba(0,0,0,0.1);
+    border-radius: 16px;
+    padding: 28px 22px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .icon-circle {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: #E6F1FB;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .icon-circle i { font-size: 28px; color: #185FA5; }
+  .icon-circle.win { background: #E6F1FB; }
+  .icon-circle.win i { color: #185FA5; }
+  .icon-circle.lose { background: #F1EFE8; }
+  .icon-circle.lose i { color: #5F5E5A; }
+  h1 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .sub {
+    font-size: 14px;
+    color: #5F5E5A;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  button#draw-btn {
+    width: 100%;
+    height: 50px;
+    background: #185FA5;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button#draw-btn:active { transform: scale(0.98); }
+  button#draw-btn:disabled { opacity: 0.6; cursor: default; }
+  button#draw-btn i { font-size: 18px; vertical-align: -3px; margin-right: 6px; }
+  .hint {
+    font-size: 12px;
+    color: #888780;
+    margin-top: 14px;
+  }
+  .result-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .result-title.win { color: #185FA5; }
+  .result-sub {
+    font-size: 15px;
+    color: #5F5E5A;
+    margin-bottom: 20px;
+  }
+  .code-box {
+    background: #E6F1FB;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .code-box .label {
+    font-size: 12px;
+    color: #185FA5;
+    margin-bottom: 4px;
+  }
+  .code-box .code {
+    font-size: 26px;
+    font-weight: 700;
+    color: #185FA5;
+    letter-spacing: 1.5px;
+  }
+  .timestamp {
+    font-size: 12px;
+    color: #888780;
+  }
+  .lose-box {
+    background: #F1EFE8;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 14px;
+    color: #5F5E5A;
+  }
+  .lose-box i { font-size: 18px; vertical-align: -4px; margin-right: 6px; }
+  .footer-note {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 12px;
+    color: #888780;
+    line-height: 1.6;
+  }
+  #result-card.win-card { border: 2px solid #378ADD; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="brand"><span class="name">LOTTE CINEMA 울산성남</span></div>
+
+  <div id="intro-card" class="card">
+    <div class="icon-circle"><i class="ti ti-ticket"></i></div>
+    <h1>설문조사 참여 감사합니다</h1>
+    <p class="sub">
+      탄산M 쿠폰은 참여자 전원에게 증정됩니다.<br>
+      아래 버튼을 누르면 관람권 즉석 추첨 결과를<br>바로 확인하실 수 있어요.
+    </p>
+    <button id="draw-btn">
+      <i class="ti ti-gift"></i>관람권 추첨 확인하기
+    </button>
+    <p class="hint">1인 1회만 참여 가능합니다</p>
+  </div>
+
+  <div id="result-card" class="card" style="display:none;"></div>
+
+  <div class="footer-note">
+    당첨 화면을 직원에게 보여주시면<br>현장에서 바로 관람권을 드립니다
+  </div>
+</div>
+
+<script>
+(function(){
+  var btn = document.getElementById('draw-btn');
+  var introCard = document.getElementById('intro-card');
+  var resultCard = document.getElementById('result-card');
+  var WIN_RATE = 0.05; // 200명 중 10명 = 5%
+  var STORAGE_KEY = 'lottecinema_draw_done';
+
+  // 이미 참여한 브라우저인지 확인 (단순 중복 방지, 완벽하지 않음)
+  function alreadyDrawn() {
+    try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch(e) { return false; }
+  }
+  function markDrawn() {
+    try { localStorage.setItem(STORAGE_KEY, '1'); } catch(e) {}
+  }
+
+  if (alreadyDrawn()) {
+    introCard.innerHTML =
+      '<div class="icon-circle lose"><i class="ti ti-info-circle"></i></div>' +
+      '<h1>이미 참여하셨어요</h1>' +
+      '<p class="sub">이 기기에서는 이미 추첨에 참여하셨습니다.<br>문의사항은 직원에게 말씀해 주세요.</p>';
+  }
+
+  btn.addEventListener('click', function(){
+    btn.disabled = true;
+    btn.innerHTML = '추첨 중...';
+
+    setTimeout(function(){
+      var isWin = Math.random() < WIN_RATE;
+      introCard.style.display = 'none';
+      resultCard.style.display = 'block';
+      markDrawn();
+
+      if (isWin) {
+        var code = 'LCU-' + Math.floor(1000 + Math.random() * 9000);
+        var now = new Date();
+        var pad = function(n){ return String(n).padStart(2,'0'); };
+        var timeStr = now.getFullYear() + '.' + pad(now.getMonth()+1) + '.' + pad(now.getDate()) + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+
+        resultCard.classList.add('win-card');
+        resultCard.innerHTML =
+          '<div class="icon-circle win"><i class="ti ti-confetti"></i></div>' +
+          '<p class="result-title win">당첨을 축하드립니다!</p>' +
+          '<p class="result-sub">영화 관람권 1매가 증정됩니다</p>' +
+          '<div class="code-box">' +
+            '<p class="label">당첨 확인 코드</p>' +
+            '<p class="code">' + code + '</p>' +
+          '</div>' +
+          '<p class="timestamp">확인 시각 ' + timeStr + '</p>';
+      } else {
+        resultCard.innerHTML =
+          '<div class="icon-circle lose"><i class="ti ti-mood-smile"></i></div>' +
+          '<p class="result-title">아쉽지만 다음 기회에!</p>' +
+          '<p class="result-sub">관람권 당첨은 되지 않았지만<br>탄산M 쿠폰은 매점에서 받아가실 수 있어요</p>' +
+          '<div class="lose-box"><i class="ti ti-cup"></i>탄산M 쿠폰 매점에서 수령</div>';
+      }
+    }, 800);
+  });
+})();
+</script>
+
+</body>
+</html>
